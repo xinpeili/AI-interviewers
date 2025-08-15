@@ -1,0 +1,27 @@
+<view class="interview-container">
+  <view class="progress-container">
+    <text class="progress-text">问题 {{currentQuestionIndex + 1}} / {{questions.length}}</text>
+    <progress percent="{{((currentQuestionIndex + 1) / questions.length) * 100}}" stroke-width="10" activeColor="#007aff" backgroundColor="#e9ecef" border-radius="5"></progress>
+  </view>
+
+  <view class="question-container">
+    <text class="question-text">{{questions[currentQuestionIndex].title}}</text>
+    <view class="difficulty-container">
+      <text class="difficulty-label">难度:</text>
+      <view class="stars">
+        <image wx:for="{{questions[currentQuestionIndex].difficulty}}" wx:key="*this" class="star" src="/images/star_filled.svg"></image>
+        <image wx:for="{{5 - questions[currentQuestionIndex].difficulty}}" wx:key="*this" class="star" src="/images/star_empty.svg"></image>
+      </view>
+    </view>
+  </view>
+
+  <view class="answer-container">
+    <textarea class="answer-textarea" placeholder="请输入您的回答..." bindinput="onAnswerInput" value="{{userAnswer}}"></textarea>
+  </view>
+
+  <view class="action-container">
+    <button class="next-button" bindtap="nextQuestion" disabled="{{!userAnswer}}">
+      {{currentQuestionIndex === questions.length - 1 ? '完成面试' : '下一题'}}
+    </button>
+  </view>
+</view>

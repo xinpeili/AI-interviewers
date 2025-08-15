@@ -1,0 +1,21 @@
+<view class="container">
+  <view class="title-container">
+    <text class="title">AI 面试官</text>
+  </view>
+
+  <view class="upload-container">
+    <view class="upload-box" bindtap="uploadResume">
+      <image class="upload-icon" src="/images/upload_icon.svg"></image>
+      <text class="upload-text">{{resumeName ? resumeName : '点击上传简历'}}</text>
+    </view>
+  </view>
+
+  <view class="position-container">
+    <input class="position-input" placeholder="请输入面试岗位" bindinput="onPositionInput" />
+  </view>
+
+  <view class="action-container">
+    <button class="start-button" bindtap="startInterview" disabled="{{!resumeName || !position}}">开始模拟面试</button>
+    <button class="history-button" bindtap="goToHistory">查看面试历史</button>
+  </view>
+</view>

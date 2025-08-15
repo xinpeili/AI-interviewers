@@ -1,0 +1,103 @@
+.history-container {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: #f7f8fa;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-shrink: 0; /* 防止头部在flex布局中被压缩 */
+}
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.clear-button {
+  margin: 0;
+  background-color: #fff;
+  color: #f56c6c;
+  border: 1px solid #f56c6c;
+}
+
+.history-list {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 0 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-position {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.item-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.item-score {
+  display: flex;
+  align-items: center;
+}
+
+.score-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #007aff;
+  margin-right: 5px;
+}
+
+.arrow-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.empty-state {
+  /* 核心修复：使用flex布局实现垂直居中 */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  /* 从视觉中心稍微上移一点，效果更好 */
+  padding-bottom: 60px;
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #999;
+}

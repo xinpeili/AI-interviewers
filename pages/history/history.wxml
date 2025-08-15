@@ -1,0 +1,22 @@
+<view class="history-container">
+  <view class="header">
+    <text class="title">面试历史记录</text>
+    <button class="clear-button" size="mini" bindtap="clearHistory" wx:if="{{history.length > 0}}">清空历史</button>
+  </view>
+  <view wx:if="{{history.length > 0}}" class="history-list">
+    <view class="history-item" wx:for="{{history}}" wx:key="id" bindtap="viewDetail" data-id="{{item.id}}">
+      <view class="item-info">
+        <text class="item-position">{{item.position}}</text>
+        <text class="item-date">{{item.date}}</text>
+      </view>
+      <view class="item-score">
+        <text class="score-text">{{item.score}}分</text>
+        <image class="arrow-icon" src="/images/arrow-right.svg" />
+      </view>
+    </view>
+  </view>
+  <view wx:else class="empty-state">
+    <image class="empty-icon" src="/images/empty-box.svg" />
+    <text class="empty-text">暂无面试记录</text>
+  </view>
+</view>

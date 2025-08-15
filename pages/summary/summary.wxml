@@ -1,0 +1,68 @@
+<view class="summary-container" wx:if="{{summaryData}}">
+  <view class="header-container">
+    <image class="summary-icon" src="/images/summary_icon.svg"></image>
+    <text class="summary-title">面试总结报告</text>
+  </view>
+
+  <view class="section-container info-section">
+    <view class="info-item">
+      <text class="info-label">面试岗位：</text>
+      <text class="info-value">{{summaryData.position}}</text>
+    </view>
+    <view class="info-item">
+      <text class="info-label">所用简历：</text>
+      <text class="info-value">{{summaryData.resumeName}}</text>
+    </view>
+    <view class="info-item">
+      <text class="info-label">面试时间：</text>
+      <text class="info-value">{{summaryData.date}}</text>
+    </view>
+  </view>
+
+  <view class="section-container">
+    <view class="section-title-box">
+      <text class="section-title">综合评分</text>
+    </view>
+    <view class="score-container">
+      <text class="score">{{summaryData.score}}</text>
+      <text class="score-label">分</text>
+    </view>
+  </view>
+
+  <view class="section-container">
+    <view class="section-title-box">
+      <text class="section-title">改进建议</text>
+    </view>
+    <view class="suggestions-list">
+      <view class="suggestion-item" wx:for="{{summaryData.suggestions}}" wx:key="index">・ {{item}}</view>
+    </view>
+  </view>
+
+  <view class="section-container">
+    <view class="section-title-box">
+      <text class="section-title">问答详情</text>
+    </view>
+    <view class="answers-details-list">
+      <view class="answer-detail-item" wx:for="{{summaryData.answers}}" wx:for-item="item" wx:key="index">
+        <view class="q-title-box">
+          <text class="q-index">Q{{index + 1}}:</text>
+          <text class="q-title">{{item.question.title}}</text>
+        </view>
+
+        <view class="your-answer-box">
+          <text class="box-label">你的回答</text>
+          <text class="box-content">{{item.answer || '未作答'}}</text>
+        </view>
+
+        <view class="suggested-answer-box">
+          <text class="box-label">参考思路</text>
+          <text class="box-content">{{item.question.suggestedAnswer}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="action-container">
+    <button class="home-button" bindtap="goHome">返回首页</button>
+  </view>
+</view>
