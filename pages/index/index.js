@@ -1,4 +1,5 @@
-// index.js
+import { api } from '../../utils/api';
+
 Page({
   data: {
     resumeName: '',
@@ -14,8 +15,6 @@ Page({
         this.setData({
           resumeName: tempFile.name
         });
-        // For this demo, we'll just store the name
-        console.log('Selected file:', tempFile);
       },
       fail: (err) => {
         console.log('File selection failed:', err);
@@ -24,17 +23,24 @@ Page({
   },
 
   onPositionInput(e) {
-    this.setData({
-      position: e.detail.value
-    });
+    this.setData({ position: e.detail.value });
   },
 
-  startInterview() {
+  async startInterview() {
     const { resumeName, position } = this.data;
-    if (resumeName && position) {
+    if (!resumeName || !position) return;
+
+    wx.showLoading({ title: '正在生成题目...' });
+    try {
+      const res = await api.startInterview({ resumeName, position });
+      wx.hideLoading();
+      
       wx.navigateTo({
-        url: `../interview/interview?position=${position}&resumeName=${encodeURIComponent(resumeName)}`
+        url: `../interview/interview?interviewId=${res.interviewId}&question=${encodeURIComponent(JSON.stringify(res.question))}`
       });
+    } catch (e) {
+      wx.hideLoading();
+      wx.showToast({ title: '出题失败，请重试', icon: 'error' });
     }
   },
 

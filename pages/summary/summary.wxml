@@ -56,7 +56,25 @@
 
         <view class="suggested-answer-box">
           <text class="box-label">参考思路</text>
-          <text class="box-content">{{item.question.suggestedAnswer}}</text>
+          <view class="box-content reference-content">
+            <!-- 已有参考思路 -->
+            <text wx:if="{{item.reference}}" class="reference-text">{{item.reference}}</text>
+            
+            <!-- 该题正在生成参考思路 -->
+            <view wx:elif="{{item._loadingRef}}" class="reference-loading">
+              <view class="loading-dots">
+                <view class="dot"></view>
+                <view class="dot"></view>
+                <view class="dot"></view>
+              </view>
+              <text class="loading-text">生成中...</text>
+            </view>
+            
+            <view wx:else class="fetch-reference-container" bindtap="fetchQuestionReference" data-index="{{index}}">
+              <text class="fetch-reference-text">点击获取参考思路</text>
+              <text class="fetch-reference-icon">→</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -64,5 +82,14 @@
 
   <view class="action-container">
     <button class="home-button" bindtap="goHome">返回首页</button>
+  </view>
+</view>
+
+<!-- 主要加载状态 -->
+<view class="loading-container" wx:if="{{isLoading}}">
+  <view class="loading-content">
+    <view class="loading-spinner main-loading"></view>
+    <text class="loading-title">生成总结报告中...</text>
+    <text class="loading-subtitle">AI正在分析您的面试表现</text>
   </view>
 </view>

@@ -1,3 +1,5 @@
+import { api } from '../../utils/api';
+
 Page({
   data: {
     history: []
@@ -5,23 +7,31 @@ Page({
   onShow() {
     this.loadHistory();
   },
-  loadHistory() {
-    const history = wx.getStorageSync('interviewHistory') || [];
-    this.setData({ history });
+  async loadHistory() {
+    wx.showLoading({ title: '加载中...' });
+    try {
+      const res = await api.getHistory();
+      this.setData({ history: res });
+      wx.hideLoading();
+    } catch(e) {
+      wx.hideLoading();
+      wx.showToast({ title: '加载失败', icon: 'error' });
+    }
   },
   viewDetail(e) {
     const { id } = e.currentTarget.dataset;
+    // 注意：历史详情页也应通过API获取，这里暂时跳转到总结页并传入ID
     wx.navigateTo({
-      url: `../summary/summary?id=${id}`
+      url: `../summary/summary?interviewId=${id}`
     });
   },
-  clearHistory() {
+  async clearHistory() {
     wx.showModal({
       title: '确认',
-      content: '确定要清空所有面试历史吗？此操作不可恢复。',
-      success: (res) => {
+      content: '确定要清空所有面试历史吗？',
+      success: async (res) => {
         if (res.confirm) {
-          wx.removeStorageSync('interviewHistory');
+          await api.clearHistory();
           this.loadHistory();
           wx.showToast({ title: '已清空', icon: 'success' });
         }

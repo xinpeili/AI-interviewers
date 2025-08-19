@@ -1,4 +1,4 @@
-// pages/interview/interview.js
+import { api } from '../../utils/api';
 
 // 更专业的题库，包含建议答案
 const questionBank = {
@@ -137,76 +137,70 @@ const questionBank = {
 
 Page({
   data: {
-    position: '',
-    resumeName: '', // 新增
-    questions: [],
-    currentQuestionIndex: 0,
+    interviewId: null,
+    currentQuestion: null,
     userAnswer: '',
-    answers: []
+    questionCount: 1,
+    isSubmitting: false,
   },
 
   onLoad(options) {
-    this.setData({
-      position: options.position,
-      resumeName: decodeURIComponent(options.resumeName) // 新增
-    });
-    this.generateQuestions();
-  },
-
-  generateQuestions() {
-    const { position } = this.data;
-    let generatedQuestions = [];
-    
-    // 随机抽取4个通用问题
-    generatedQuestions.push(...questionBank.general.sort(() => 0.5 - Math.random()).slice(0, 4));
-  
-    const lowerCasePosition = position.toLowerCase();
-    if (lowerCasePosition.includes('frontend') || lowerCasePosition.includes('前端')) {
-      // 随机抽取5个前端问题
-      generatedQuestions.push(...questionBank.frontend.sort(() => 0.5 - Math.random()).slice(0, 5));
-    } else if (lowerCasePosition.includes('backend') || lowerCasePosition.includes('后端')) {
-      // 随机抽取5个后端问题
-      generatedQuestions.push(...questionBank.backend.sort(() => 0.5 - Math.random()).slice(0, 5));
+    // 从 URL 参数中解析出面试ID和第一个问题
+    if (options.interviewId && options.question) {
+      const question = JSON.parse(decodeURIComponent(options.question));
+      this.setData({
+        interviewId: options.interviewId,
+        currentQuestion: question,
+      });
     } else {
-      // 如果岗位不明确，再加5个通用问题
-      generatedQuestions.push(...questionBank.general.sort(() => 0.5 - Math.random()).slice(4, 9));
+      // 异常处理
+      wx.showToast({ title: '页面加载错误', icon: 'error' });
+      wx.navigateBack();
     }
-    
-    // 最终随机打乱问题顺序
-    this.setData({
-      questions: generatedQuestions.sort(() => 0.5 - Math.random())
-    });
   },
 
+  // 绑定用户输入
   onAnswerInput(e) {
     this.setData({
       userAnswer: e.detail.value
     });
   },
 
-  nextQuestion() {
-    const { userAnswer, answers, currentQuestionIndex, questions, position, resumeName } = this.data;
-    
-    const newAnswers = [...answers, { question: questions[currentQuestionIndex], answer: userAnswer }];
-    this.setData({
-        answers: newAnswers,
-        userAnswer: ''
-    });
+  // 点击“下一题”按钮
+  async nextQuestion() {
+    if (!this.data.userAnswer.trim()) {
+      wx.showToast({ title: '回答不能为空', icon: 'none' });
+      return;
+    }
+    this.setData({ isSubmitting: true });
 
-    if (currentQuestionIndex < questions.length - 1) {
-      this.setData({
-        currentQuestionIndex: currentQuestionIndex + 1
+    const { interviewId, currentQuestion, userAnswer } = this.data;
+    
+    try {
+      // 调用后端 API 获取下一题
+      const res = await api.getNextQuestion({
+        interviewId,
+        question: currentQuestion, // 传递完整的上一题对象
+        answer: userAnswer,
       });
-    } else {
-      // 面试结束，将完整数据存入全局，由总结页处理
-      getApp().globalData.interviewData = {
-        answers: newAnswers,
-        position: position,
-        resumeName: resumeName
-      };
-      wx.redirectTo({
-        url: '../summary/summary'
-      });
+
+      if (res.nextQuestion) {
+        // 如果 AI 返回了下一题
+        this.setData({
+          currentQuestion: res.nextQuestion,
+          userAnswer: '', // 清空回答框
+          questionCount: this.data.questionCount + 1,
+          isSubmitting: false,
+        });
+      } else {
+        // 如果返回 null，说明面试结束
+        wx.redirectTo({
+          url: `../summary/summary?interviewId=${interviewId}`,
+        });
+      }
+    } catch (e) {
+      wx.showToast({ title: '请求失败，请重试', icon: 'error' });
+      this.setData({ isSubmitting: false });
     }
   }
 });

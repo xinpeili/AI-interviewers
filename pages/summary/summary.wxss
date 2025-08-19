@@ -1,3 +1,98 @@
+/* 页面整体样式与布局 */
+
+/* 小圆圈加载动画 */
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #ffd666;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+.main-loading {
+  width: 28px;
+  height: 28px;
+  border-color: #91d5ff;
+  border-top-color: transparent;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 主要加载页样式 */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f8fa;
+}
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.loading-title {
+  margin-top: 12px;
+  color: #333;
+  font-size: 16px;
+  font-weight: bold;
+}
+.loading-subtitle {
+  margin-top: 6px;
+  color: #888;
+  font-size: 12px;
+}
+
+/* 参考思路“生成中...”的点点动画 */
+.reference-loading {
+  display: flex;
+  align-items: center;
+}
+.loading-dots {
+  display: inline-flex;
+  margin-right: 8px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #91d5ff;
+  border-radius: 50%;
+  margin-right: 4px;
+  animation: blink 1.4s infinite both;
+}
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+
+/* 参考文本样式 */
+.reference-content { white-space: pre-wrap; }
+.reference-text { color: #4b5563; }
+
+/* 新增：按需获取参考思路的样式 */
+.fetch-reference-container {
+  display: inline-flex;
+  align-items: center;
+  color: #007aff;
+  padding: 6px 10px;
+  border: 1px dashed #91d5ff;
+  border-radius: 6px;
+  background: #f0f9ff;
+}
+.fetch-reference-container:active {
+  background: #e6f4ff;
+}
+.fetch-reference-text {
+  font-size: 14px;
+}
+.fetch-reference-icon {
+  margin-left: 6px;
+}
+
+/* 现有样式保留 */
 .summary-container {
   display: flex;
   flex-direction: column;
@@ -154,10 +249,6 @@
   color: #666;
   line-height: 1.7;
   white-space: pre-wrap;
-}
-
-.your-answer-box {
-  border-left-color: #ff4d4f;
 }
 
 .analysis-box {
