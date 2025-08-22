@@ -1,0 +1,11 @@
+{
+  "name": "interview",
+  "version": "1.0.0",
+  "description": "Interview cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest",
+    "zhipuai": "^2.0.0",
+    "node-fetch": "^2.6.7"
+  }
+}

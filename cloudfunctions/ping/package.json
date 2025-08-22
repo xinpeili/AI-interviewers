@@ -1,0 +1,9 @@
+{
+  "name": "ping",
+  "version": "1.0.0",
+  "description": "A simple ping function to test environment.",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

@@ -30,9 +30,15 @@ Page({
       clearTimeout(this._pollTimer);
       this._pollTimer = null;
     }
-    if (this._refPollTimer) {
-      clearTimeout(this._refPollTimer);
-      this._refPollTimer = null;
+    // 停止所有进行中的参考建议轮询
+    if (this._refPollData) {
+      for (const key in this._refPollData) {
+        const poll = this._refPollData[key];
+        if (poll && poll.timer) {
+          clearTimeout(poll.timer);
+        }
+      }
+      this._refPollData = null;
     }
   },
 
@@ -222,70 +228,97 @@ Page({
       }
     } catch (e) {}
   },
-  // 新增：按需获取某题的参考思路
-  async fetchQuestionReference(e) {
-    try {
-      const rawIndex = e.currentTarget.dataset.index;
-      const index = Number(rawIndex);
-      console.log('[DEBUG] fetchQuestionReference called with index:', rawIndex, '=> coerced:', index, 'interviewId:', this._interviewId);
-      
-      if (!Number.isInteger(index) || index < 0 || this._interviewId == null) {
-        console.error('[DEBUG] Invalid index or missing interviewId:', { rawIndex, index, interviewId: this._interviewId });
-        return;
-      }
-      
-      const data = this.data.summaryData;
-      if (!data || !Array.isArray(data.answers) || !data.answers[index]) {
-        console.error('[DEBUG] Invalid summaryData or missing answer at index:', index);
-        return;
-      }
 
-      // 避免重复点击
-      if (data.answers[index]._loadingRef) {
-        console.log('[DEBUG] Already loading reference for index:', index);
-        return;
-      }
+  // 为单个问题轮询参考建议
+  _scheduleRefPollForIndex(interviewId, index) {
+    if (!this._refPollData) {
+      this._refPollData = {}; // 按 index 存储轮询状态 { count, timer }
+    }
+    if (!this._refPollData[index]) {
+      this._refPollData[index] = { count: 0, timer: null };
+    }
 
-      // 以前这里若已有参考思路会直接 return；为支持“刷新/修复”场景，即使已有也触发一次接口（后端会返回缓存）
-      if (data.answers[index].reference && data.answers[index].reference.trim()) {
-        console.log('[DEBUG] Reference exists locally for index, but will refresh from server for consistency:', index);
-      }
+    const pollState = this._refPollData[index];
+    const maxTries = 30; // 最多轮询约 60 秒
 
-      console.log('[DEBUG] Starting reference generation (or refresh) for index:', index);
-      
-      // 标记该项加载中
+    if (pollState.count >= maxTries) {
       const keyLoading = `summaryData.answers[${index}]._loadingRef`;
-      this.setData({ [keyLoading]: true, refInProgress: false });
+      this.setData({ [keyLoading]: false });
+      wx.showToast({ title: '生成超时', icon: 'none' });
+      delete this._refPollData[index];
+      return;
+    }
 
-      console.log('[DEBUG] Calling API getQuestionReference with:', { interviewId: this._interviewId, questionIndex: index });
-      const res = await api.getQuestionReference(this._interviewId, index);
-      console.log('[DEBUG] API response received:', res);
-      
-      const refText = this._sanitizeReference(String(res && res.reference ? res.reference : ''));
-      console.log('[DEBUG] Sanitized reference text:', refText);
+    pollState.count++;
 
-      // 写回并清除loading
-      const keyRef = `summaryData.answers[${index}].reference`;
-      this.setData({ [keyRef]: refText, [keyLoading]: false });
+    if (pollState.timer) clearTimeout(pollState.timer);
 
-      // 更新顶部横幅状态：确保横幅永不显示
-      const anyLoading = false; // 强制不显示横幅
-      this.setData({ refInProgress: false });
-
-      console.log('[DEBUG] Reference generation completed for index:', index, 'stillLoading:', anyLoading);
-
-    } catch (err) {
-      console.error('[DEBUG] fetchQuestionReference error:', err);
+    pollState.timer = setTimeout(async () => {
       try {
-        const index = Number(e.currentTarget.dataset.index);
+        const res = await api.getQuestionReference(interviewId, index);
+
+        if (res && res.status === 'ready') {
+          const refText = this._sanitizeReference(res.reference || '');
+          const keyRef = `summaryData.answers[${index}].reference`;
+          const keyLoading = `summaryData.answers[${index}]._loadingRef`;
+          this.setData({ [keyRef]: refText, [keyLoading]: false });
+          delete this._refPollData[index]; // 成功后停止
+        } else if (res && res.status === 'generating') {
+          this._scheduleRefPollForIndex(interviewId, index); // 继续轮询
+        } else {
+          throw new Error((res && res.message) || '获取建议失败');
+        }
+      } catch (e) {
         const keyLoading = `summaryData.answers[${index}]._loadingRef`;
         this.setData({ [keyLoading]: false });
-        // 根据是否还有其他题目处于加载中来决定是否显示横幅
-        const answers = (this.data.summaryData && this.data.summaryData.answers) || [];
-        const anyLoading = false; // 强制不显示横幅
-        this.setData({ refInProgress: false });
-      } catch (_) {}
-      wx.showToast({ title: '获取参考思路失败', icon: 'none' });
+        wx.showToast({ title: (e && e.message) || '获取失败', icon: 'none' });
+        delete this._refPollData[index]; // 失败后停止
+      }
+    }, 2000);
+  },
+
+  // 新增：按需获取某题的参考思路
+  async fetchQuestionReference(e) {
+    const rawIndex = e.currentTarget.dataset.index;
+    const index = Number(rawIndex);
+    if (!Number.isInteger(index) || index < 0 || !this._interviewId) {
+      return;
+    }
+
+    const data = this.data.summaryData;
+    if (!data || !Array.isArray(data.answers) || !data.answers[index]) {
+      return;
+    }
+
+    // 避免重复点击
+    if (data.answers[index]._loadingRef) {
+      return;
+    }
+
+    // 标记该项加载中
+    const keyLoading = `summaryData.answers[${index}]._loadingRef`;
+    this.setData({ [keyLoading]: true });
+
+    try {
+      const res = await api.getQuestionReference(this._interviewId, index);
+
+      if (res && res.status === 'generating') {
+        this._scheduleRefPollForIndex(this._interviewId, index);
+      } else if (res && res.status === 'ready') {
+        const refText = this._sanitizeReference(res.reference || '');
+        const keyRef = `summaryData.answers[${index}].reference`;
+        this.setData({ [keyRef]: refText, [keyLoading]: false });
+      } else if (res && res.status === 'failed') {
+        throw new Error(res.message || '生成失败，请重试');
+      } else {
+        // 兜底：对于已存在的直接返回内容的情况
+        const refText = this._sanitizeReference((res && res.reference) || '');
+        const keyRef = `summaryData.answers[${index}].reference`;
+        this.setData({ [keyRef]: refText, [keyLoading]: false });
+      }
+    } catch (err) {
+      this.setData({ [keyLoading]: false });
+      wx.showToast({ title: (err && err.message) || '获取参考思路失败', icon: 'none' });
     }
   },
 

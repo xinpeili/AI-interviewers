@@ -184,6 +184,17 @@ Page({
         answer: userAnswer,
       });
 
+      // 检查是否有AI生成失败的错误
+      if (res.error) {
+        wx.showToast({ 
+          title: res.message || 'AI生成问题失败，请重新点击获取问题', 
+          icon: 'none',
+          duration: 3000
+        });
+        this.setData({ isSubmitting: false });
+        return;
+      }
+
       if (res.nextQuestion) {
         // 如果 AI 返回了下一题
         this.setData({
@@ -199,7 +210,12 @@ Page({
         });
       }
     } catch (e) {
-      wx.showToast({ title: '请求失败，请重试', icon: 'error' });
+      console.error('获取下一题失败:', e);
+      wx.showToast({ 
+        title: '网络错误，请重试', 
+        icon: 'error',
+        duration: 3000
+      });
       this.setData({ isSubmitting: false });
     }
   }

@@ -1,49 +1,40 @@
-const BASE_URL = 'http://localhost:3001/api'; // 你的后端服务地址
-
-// 封装 wx.request
-const request = (method, url, data) => {
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: `${BASE_URL}${url}`,
-      method,
-      data,
-      success: (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res.data);
-        } else {
-          reject(res);
-        }
-      },
-      fail: (err) => {
-        reject(err);
+// 使用云开发云函数替代本地 HTTP 接口
+const call = (name, data = {}) => new Promise((resolve, reject) => {
+  wx.cloud.callFunction({
+    name,
+    data,
+    success: res => {
+      // 云函数返回格式约定：{ code: 0, data: any } 或直接返回对象
+      const payload = res?.result;
+      if (!payload) return resolve(null);
+      if (typeof payload === 'object' && payload !== null && 'code' in payload) {
+        if (payload.code === 0) return resolve(payload.data);
+        return reject(payload);
       }
-    });
+      resolve(payload);
+    },
+    fail: err => reject(err)
   });
-};
+});
 
 const api = {
   // 开始面试
-  startInterview: (params) => request('POST', '/interview', params),
+  startInterview: (params) => call('interview', { action: 'start', ...params }),
 
-  // 获取下一题 (注意，这里传给后端的 body 变了)
-  getNextQuestion: (params) => request('POST', `/interview/${params.interviewId}/next`, {
-    question: params.question,
-    answer: params.answer
-  }),
+  // 获取下一题
+  getNextQuestion: (params) => call('interview', { action: 'next', ...params }),
 
   // 获取总结报告
-  getSummary: (interviewId) => request('GET', `/interview/${interviewId}/summary`),
+  getSummary: (interviewId) => call('interview', { action: 'summary', interviewId }),
   
   // 按需获取某题的参考思路
-  getQuestionReference: (interviewId, questionIndex) => request('POST', `/interview/${interviewId}/reference`, {
-    questionIndex
-  }),
+  getQuestionReference: (interviewId, questionIndex) => call('interview', { action: 'reference', interviewId, questionIndex }),
   
   // 获取历史记录
-  getHistory: () => request('GET', '/history'),
+  getHistory: () => call('interview', { action: 'history' }),
 
   // 清空历史
-  clearHistory: () => request('DELETE', '/history')
+  clearHistory: () => call('interview', { action: 'clearHistory' })
 };
 
 export { api };

@@ -5,11 +5,13 @@
   background-color: #f7f8fa;
   padding: 20px;
   box-sizing: border-box;
+  overflow: hidden; /* 防止整体出现滚动条 */
 }
 
 .progress-container {
   width: 100%;
   margin-bottom: 20px;
+  flex-shrink: 0; /* 防止进度容器被压缩 */
 }
 
 .progress-text {
@@ -25,6 +27,7 @@
   border-radius: 10px;
   margin-bottom: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0; /* 防止问题容器被压缩 */
 }
 
 .question-text {
@@ -57,24 +60,31 @@
 }
 
 .answer-container {
-  flex-grow: 1;
+  flex: 1;
   width: 100%;
   margin-bottom: 20px;
+  min-height: 0; /* 修复flex布局在真机上的问题 */
+  display: flex; /* 让容器也成为flex容器 */
 }
 
 .answer-textarea {
   width: 100%;
-  height: 100%;
+  height: 100%; /* 占满父容器的全部高度 */
   padding: 15px;
   border: 1px solid #ddd;
   border-radius: 10px;
   background-color: #fff;
   font-size: 16px;
   box-sizing: border-box;
+  resize: none; /* 禁用拖拽调整大小 */
+  overflow-y: auto; /* 内容超出时显示滚动条 */
+  word-wrap: break-word; /* 长单词自动换行 */
+  word-break: break-all; /* 防止内容溢出 */
 }
 
 .action-container {
   width: 100%;
+  flex-shrink: 0; /* 防止按钮容器被压缩 */
 }
 
 .next-button {
