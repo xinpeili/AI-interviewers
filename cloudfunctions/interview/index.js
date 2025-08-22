@@ -346,8 +346,8 @@ async function genSummary(itv) {
     const avgLen = count > 0 ? totalLen / count : 0;
     const avgDiff = count > 0 ? (answers.reduce((s, a) => s + (Number(a?.question?.difficulty) || 3), 0) / count) : 3;
 
-    // 更严格的评分标准，提高门槛
-    let base = 15; // 降低基线分数，提高门槛
+    // 极严格的评分标准，大幅提高门槛
+    let base = 5; // 大幅降低基线分数
     let qualitySum = 0;
     let totalPenalty = 0;
     
@@ -357,74 +357,96 @@ async function genSummary(itv) {
       const len = ans.length;
       let per = 0;
       
-      // 更严格的长度评分（信息量要求更高）
-      if (len < 30) per += 0; // 太短不给分
-      else if (len < 80) per += 2; // 偏短，给很少分
-      else if (len < 150) per += 4; // 中等长度
-      else if (len < 300) per += 6; // 较好长度
-      else if (len < 500) per += 8; // 很好长度
-      else per += 10; // 优秀长度
+      // 极严格的长度评分
+      if (len < 50) per += 0; // 太短不给分
+      else if (len < 100) per += 1; // 偏短，给很少分
+      else if (len < 200) per += 2; // 中等长度
+      else if (len < 400) per += 3; // 较好长度
+      else if (len < 600) per += 4; // 很好长度
+      else per += 5; // 优秀长度
       
-      // 量化指标加分（要求更严格）
+      // 量化指标加分（更严格）
       const hasNumber = /\d|%/.test(ans);
-      if (hasNumber) per += 2; // 降低加分
+      if (hasNumber) per += 1; // 大幅降低加分
       
-      // STAR框架加分（要求更严格）
+      // STAR框架加分（更严格）
       const hasSTAR = /(情境|任务|行动|结果|反思|STAR)/i.test(ans);
-      if (hasSTAR) per += 2; // 降低加分
+      if (hasSTAR) per += 1; // 大幅降低加分
       
-      // 内容质量检查（新增）
-      const hasConcreteContent = /(项目|系统|功能|技术|方案|解决|优化|改进)/i.test(ans);
-      if (hasConcreteContent) per += 2;
+      // 内容质量检查（更严格）
+      const hasConcreteContent = /(项目|系统|功能|技术|方案|解决|优化|改进|架构|设计|实现|开发)/i.test(ans);
+      if (hasConcreteContent) per += 1;
+      
+      // 专业术语检查（新增）
+      const hasProfessionalTerms = /(算法|框架|工具|平台|服务|接口|协议|标准|规范|流程|方法论)/i.test(ans);
+      if (hasProfessionalTerms) per += 1;
       
       // 难度加权（更严格）
-      per += Math.max(-3, Math.min(3, Math.round((qd - 3) * 1.5)));
+      per += Math.max(-2, Math.min(2, Math.round((qd - 3) * 1)));
       
-      // 低质量回答惩罚（更严格）
+      // 低质量回答惩罚（极严格）
       if (len < 30) {
         per = 0; // 太短直接0分
-        totalPenalty += 3; // 额外惩罚
-      } else if (/不知道|不会|随便|无|N\/?A|不清楚|不了解/i.test(ans)) {
-        per = Math.max(0, per - 8); // 增加惩罚
-        totalPenalty += 2;
+        totalPenalty += 5; // 大幅增加惩罚
+      } else if (/不知道|不会|随便|无|N\/?A|不清楚|不了解|不知道|不懂|没做过/i.test(ans)) {
+        per = Math.max(0, per - 10); // 大幅增加惩罚
+        totalPenalty += 5;
       } else if (len < 50) {
-        per = Math.max(0, per - 3); // 偏短惩罚
+        per = Math.max(0, per - 5); // 大幅增加偏短惩罚
+      } else if (len < 80) {
+        per = Math.max(0, per - 2); // 增加短回答惩罚
       }
       
-      per = Math.max(0, Math.min(15, per)); // 单题最高15分
+      // 敷衍回答检测（新增）
+      if (/哈哈|呵呵|嗯嗯|好的|可以|还行|不错|一般|凑合/i.test(ans)) {
+        per = Math.max(0, per - 8);
+        totalPenalty += 3;
+      }
+      
+      // 重复内容检测（新增）
+      const words = ans.split(/\s+/);
+      const uniqueWords = new Set(words);
+      if (words.length > 0 && uniqueWords.size / words.length < 0.6) {
+        per = Math.max(0, per - 3); // 重复词汇过多扣分
+      }
+      
+      per = Math.max(0, Math.min(8, per)); // 单题最高8分（大幅降低）
       qualitySum += per;
     }
     
-    const avgQuality = count > 0 ? (qualitySum / count) : 0; // 0~15
+    const avgQuality = count > 0 ? (qualitySum / count) : 0; // 0~8
 
-    // 完成度奖励（更严格）
+    // 完成度奖励（极严格）
     const limitInput = Number(itv.totalQuestions);
     const limit = Number.isFinite(limitInput) ? Math.max(3, Math.min(15, Math.round(limitInput))) : 8;
     const completionRatio = limit > 0 ? Math.min(1, count / limit) : 0;
-    const completionBonus = Math.round(completionRatio * 10); // 从15降到10
+    const completionBonus = Math.round(completionRatio * 5); // 大幅降低完成度奖励
 
-    // 质量惩罚（新增）
+    // 质量惩罚（极严格）
     let penalty = 0;
-    if (avgLen < 80) penalty += 8; // 平均长度过短，大幅扣分
-    else if (avgLen < 120) penalty += 4; // 中等长度，适度扣分
+    if (avgLen < 100) penalty += 15; // 平均长度过短，大幅扣分
+    else if (avgLen < 150) penalty += 8; // 中等长度，适度扣分
+    else if (avgLen < 200) penalty += 3; // 偏短，轻微扣分
     
     // 计算最终分数
     let score = base + avgQuality + completionBonus - penalty - totalPenalty;
     
     // 难度微调
-    score += Math.max(-8, Math.min(8, Math.round((avgDiff - 3) * 2)));
+    score += Math.max(-5, Math.min(5, Math.round((avgDiff - 3) * 1)));
     
     // 分数范围限制
-    score = Math.max(0, Math.min(85, Math.round(score))); // 最高85分，最低0分
+    score = Math.max(0, Math.min(70, Math.round(score))); // 最高70分，最低0分
 
     // 基于实际回答内容生成个性化建议
     const suggestions = [];
     
     // 分析回答质量，生成针对性建议
-    if (avgLen < 80) {
-      suggestions.push('回答内容严重不足，建议每个问题至少回答80字以上，包含具体细节和实例');
-    } else if (avgLen < 120) {
-      suggestions.push('回答内容偏短，建议增加具体细节、技术要点和实例说明');
+    if (avgLen < 100) {
+      suggestions.push('回答内容严重不足，建议每个问题至少回答100字以上，包含具体细节、技术要点和实例');
+    } else if (avgLen < 150) {
+      suggestions.push('回答内容偏短，建议增加具体细节、技术要点和实例说明，每个问题至少150字');
+    } else if (avgLen < 200) {
+      suggestions.push('回答内容还可以更详细，建议增加更多技术细节和项目经验描述');
     }
     
     // 检查是否有量化指标
@@ -492,19 +514,22 @@ async function genSummary(itv) {
 3. 分析：结合岗位要求，指出具体改进方向
 4. 格式：仅返回JSON，{"score":85,"suggestions":["具体建议1","具体建议2"]}
 
-评分标准（要求严格）：
-- 90-100分：回答全面深入、逻辑清晰严密、专业度极高、有具体案例和数据支撑
-- 80-89分：回答较好、逻辑较清晰、有一定专业性和具体内容
-- 70-79分：回答一般、逻辑基本清晰、有一定专业性但深度不够
-- 60-69分：回答偏简单、逻辑不够清晰、专业性不足、缺乏具体内容
-- 50-59分：回答过于简单、逻辑混乱、缺乏专业性和具体内容
-- 50分以下：回答质量很差、逻辑混乱、缺乏基本专业性
+评分标准（要求极严格）：
+- 80-100分：回答全面深入、逻辑清晰严密、专业度极高、有具体案例和数据支撑、技术细节丰富
+- 70-79分：回答较好、逻辑较清晰、有一定专业性和具体内容、有技术要点
+- 60-69分：回答一般、逻辑基本清晰、有一定专业性但深度不够、内容偏简单
+- 50-59分：回答偏简单、逻辑不够清晰、专业性不足、缺乏具体内容
+- 40-49分：回答过于简单、逻辑混乱、缺乏专业性和具体内容
+- 30-39分：回答质量很差、逻辑混乱、缺乏基本专业性
+- 30分以下：回答敷衍了事、内容空洞、不符合面试要求
 
 评分原则：
-- 回答过短（少于50字）不得高于60分
-- 回答空洞无物不得高于50分
-- 回答敷衍了事不得高于40分
-- 必须基于实际回答内容，不能给同情分` 
+- 回答过短（少于100字）不得高于50分
+- 回答空洞无物不得高于40分
+- 回答敷衍了事不得高于30分
+- 敷衍词汇（哈哈、呵呵、还行等）出现不得高于35分
+- 必须基于实际回答内容，不能给同情分
+- 要求严格公正，体现真实水平` 
     },
     { 
       role: 'user', 
