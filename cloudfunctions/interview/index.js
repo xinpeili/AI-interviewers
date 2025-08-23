@@ -99,7 +99,28 @@ async function aiChat(messages, fallback, opts = {}) {
   } catch (e) {
     lastAIError = e?.message || String(e);
     console.error('AI error:', lastAIError);
-    return { ok: false, text: fallback };
+    
+    // 提供更详细的错误信息
+    let errorDetail = 'AI调用失败';
+    if (e.message) {
+      if (e.message.includes('timeout') || e.message.includes('ai_timeout')) {
+        errorDetail = 'AI响应超时';
+      } else if (e.message.includes('empty_ai_response')) {
+        errorDetail = 'AI返回内容为空';
+      } else if (e.message.includes('client_not_initialized')) {
+        errorDetail = 'AI客户端未初始化';
+      } else if (e.message.includes('api_key')) {
+        errorDetail = 'AI API密钥配置错误';
+      } else {
+        errorDetail = e.message;
+      }
+    }
+    
+    return { 
+      ok: false, 
+      text: fallback,
+      error: errorDetail
+    };
   }
 }
 
@@ -126,7 +147,6 @@ function composeSummaryPayload(itv, summaryObj) {
       }
     } catch (e) {
       // 如果转换失败，保持原格式
-      console.log('时间格式化失败:', e.message);
     }
   }
   
@@ -586,8 +606,11 @@ exports.main = async (event, context) => {
     try { await db.createCollection('interviews'); } catch (_) {}
 
     if (action === 'health') {
+      // 简单健康检查
       return { ok: true, now: Date.now() };
     }
+
+
 
     if (action === 'aiStatus') {
       const apiKeyPresent = Boolean(process.env.ZHIPUAI_API_KEY || process.env.ZHIPU_API_KEY || process.env.ZHIPU_KEY);
@@ -601,40 +624,70 @@ exports.main = async (event, context) => {
       };
     }
 
+
+
     if (action === 'start') {
       const { position, resumeName } = event || {};
-      if (!position) return { code: 400, message: '岗位不能为空' };
+      if (!position) {
+        return { code: 400, message: '岗位不能为空' };
+      }
+      
+      // 清理岗位信息
+      const cleanPosition = (position || '').trim();
+      if (!cleanPosition) {
+        return { code: 400, message: '岗位不能为空' };
+      }
+      
       const totalQInput = Number(event && event.totalQuestions);
       const totalQuestions = Number.isFinite(totalQInput) ? Math.max(3, Math.min(15, Math.round(totalQInput))) : 15; // 默认15题
       const interview = {
         _openid: OPENID,
-        position,
+        position: cleanPosition,
         resumeName,
-        date: new Date().toLocaleString('zh-CN', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit', 
-          hour: '2-digit', 
-          minute: '2-digit',
-          timeZone: 'Asia/Shanghai'
-        }),
+        date: new Date().toISOString(),
         answers: [],
         isCompleted: false,
         summary: {},
         totalQuestions,
       };
       const addRes = await Interviews.add({ data: interview });
-      // 根据岗位类型生成不同的首题
-      const isTechnicalPosition = /(技术|开发|工程师|程序员|架构师|前端|后端|全栈|算法|数据|运维|测试|安卓|ios|android)/i.test(position || '');
+      // 根据岗位类型生成不同的首题 - 更精确的判断逻辑
+      const technicalKeywords = [
+        '技术', '开发', '工程师', '程序员', '架构师', '前端', '后端', '全栈',
+        '算法', '数据', '运维', '测试', '安卓', 'ios', 'android', 'java', 
+        'python', 'javascript', 'react', 'vue', 'node', '数据库', '系统', 
+        '网络', '安全', '云计算', '人工智能', '机器学习', '深度学习'
+      ];
+      
+      // 检查是否包含技术关键词，但排除一些常见的非技术岗位
+      const nonTechnicalKeywords = ['产品', '运营', '市场', '销售', '客服', '人事', '财务', '行政', '设计', '编辑', '翻译', '教师', '医生', '律师'];
+      
+      let isTechnicalPosition = false;
+      if (cleanPosition.length >= 2) {
+        // 检查是否包含技术关键词
+        const hasTechnicalKeyword = technicalKeywords.some(keyword => 
+          cleanPosition.toLowerCase().includes(keyword.toLowerCase())
+        );
+        
+        // 检查是否包含非技术关键词
+        const hasNonTechnicalKeyword = nonTechnicalKeywords.some(keyword => 
+          cleanPosition.toLowerCase().includes(keyword.toLowerCase())
+        );
+        
+        // 如果包含技术关键词且不包含非技术关键词，则认为是技术岗位
+        isTechnicalPosition = hasTechnicalKeyword && !hasNonTechnicalKeyword;
+      }
       
       let systemPrompt = '';
       if (isTechnicalPosition) {
-        systemPrompt = "你是一位资深的技术面试官。你的任务是根据用户提供的技术岗位，提出一个合适的开场技术面试问题。问题应该考察候选人的技术基础、学习能力或项目经验。请严格以 JSON 格式返回，包含 'id' (字符串, 'q_1'), 'title' (字符串, 问题内容), 和 'difficulty' (数字, 1-5)。所有返回内容都必须是中文。不要返回任何非 JSON 内容。";
+        systemPrompt = "你是一位资深的技术面试官。你的任务是根据用户提供的技术岗位信息，提出一个合适的开场技术面试问题。问题应该考察候选人的技术基础、学习能力或项目经验。请严格以 JSON 格式返回，包含 'id' (字符串, 'q_1'), 'title' (字符串, 问题内容), 和 'difficulty' (数字, 1-5)。所有返回内容都必须是中文。不要返回任何非 JSON 内容。";
       } else {
-        systemPrompt = "你是一位资深的面试官。你的任务是根据用户提供的岗位，提出一个合适的开场面试问题。如果简历中包含工作年限，请结合考虑，否则忽略。请严格以 JSON 格式返回，包含 'id' (字符串, 'q_1'), 'title' (字符串, 问题内容), 和 'difficulty' (数字, 1-5)。所有返回内容都必须是中文。不要返回任何非 JSON 内容。";
+        systemPrompt = "你是一位资深的面试官。你的任务是根据用户提供的岗位信息，提出一个合适的开场面试问题。请严格以 JSON 格式返回，包含 'id' (字符串, 'q_1'), 'title' (字符串, 问题内容), 和 'difficulty' (数字, 1-5)。所有返回内容都必须是中文。不要返回任何非 JSON 内容。";
       }
       
-      const userPrompt = `岗位: ${position}。请开始面试。`;
+      const userPrompt = resumeName 
+        ? `岗位: ${cleanPosition}，简历: ${resumeName}。请基于简历内容生成一个有针对性的开场面试问题。`
+        : `岗位: ${cleanPosition}。请生成一个适合该岗位的开场面试问题。`;
       const prompt = [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -651,6 +704,14 @@ exports.main = async (event, context) => {
           { id: 'q_1', title: '请描述一下你参与过的最有挑战性的技术项目。', difficulty: 3 }
         ];
         firstQuestion = techFirstQuestions[Math.floor(Math.random() * techFirstQuestions.length)];
+      } else {
+        // 非技术岗位的默认首题
+        const nonTechFirstQuestions = [
+          { id: 'q_1', title: '请做一个自我介绍，并概述你与岗位相关的经验和技能。', difficulty: 2 },
+          { id: 'q_1', title: '请分享一个你在工作中遇到的最大挑战，以及你是如何解决的。', difficulty: 2 },
+          { id: 'q_1', title: '请描述一下你对这个岗位的理解，以及你认为最重要的能力是什么。', difficulty: 2 }
+        ];
+        firstQuestion = nonTechFirstQuestions[Math.floor(Math.random() * nonTechFirstQuestions.length)];
       }
       
       try {
@@ -660,14 +721,27 @@ exports.main = async (event, context) => {
           const fb = cleaned.indexOf('{');
           const lb = cleaned.lastIndexOf('}');
           const jsonStr = (fb !== -1 && lb !== -1 && lb > fb) ? cleaned.substring(fb, lb + 1) : cleaned;
-          const obj = JSON.parse(jsonStr);
-          if (obj && obj.title) {
-            firstQuestion = { id: obj.id || 'q_1', title: obj.title, difficulty: Number(obj.difficulty) || 2 };
+          try {
+            const obj = JSON.parse(jsonStr);
+            if (obj && obj.title) {
+              firstQuestion = { id: obj.id || 'q_1', title: obj.title, difficulty: Number(obj.difficulty) || 2 };
+            }
+          } catch (parseError) {
+            // JSON解析失败，使用默认问题
           }
+        } else if (res && !res.ok) {
+          // AI调用失败，使用默认问题
         }
-      } catch (_) {}
+              } catch (aiError) {
+          // AI调用异常，使用默认问题
+        }
       
-      return { interviewId: addRes._id, question: firstQuestion };
+      return { 
+        interviewId: addRes._id, 
+        question: firstQuestion,
+        position: cleanPosition,
+        isTechnical: isTechnicalPosition
+      };
     }
 
     if (action === 'next') {
@@ -877,24 +951,45 @@ exports.main = async (event, context) => {
     if (action === 'history') {
       const { data } = await Interviews.where({ _openid: OPENID, isCompleted: true }).get();
       const filtered = (data || []).filter((i) => i.summary && typeof i.summary.score === 'number');
-      const sorted = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const sorted = filtered.sort((a, b) => {
+        try {
+          const dateA = new Date(a.date || 0);
+          const dateB = new Date(b.date || 0);
+          return dateB.getTime() - dateA.getTime();
+        } catch (e) {
+          return 0; // 如果日期解析失败，保持原顺序
+        }
+      });
       const list = sorted.map((i) => {
         // 格式化历史记录中的时间
-        let formattedDate = i.date || '';
+        let formattedDate = '未知时间';
         try {
-          if (formattedDate) {
-            const date = new Date(formattedDate);
-            formattedDate = date.toLocaleString('zh-CN', { 
-              year: 'numeric', 
-              month: '2-digit', 
-              day: '2-digit', 
-              hour: '2-digit', 
-              minute: '2-digit',
-              timeZone: 'Asia/Shanghai'
-            });
+          // 检查日期字段的类型和内容
+          if (i.date) {
+            let dateToParse = i.date;
+            
+            // 如果date是对象且有特定字段，尝试提取
+            if (typeof i.date === 'object' && i.date !== null) {
+              if (i.date.date) dateToParse = i.date.date;
+              else if (i.date.timestamp) dateToParse = i.date.timestamp;
+              else if (i.date.value) dateToParse = i.date.value;
+            }
+            
+            // 尝试解析日期
+            const date = new Date(dateToParse);
+            if (!isNaN(date.getTime())) {
+              formattedDate = date.toLocaleString('zh-CN', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'Asia/Shanghai'
+              });
+            }
           }
         } catch (e) {
-          console.log('历史记录时间格式化失败:', e.message);
+          // 时间格式化失败，使用默认值
         }
         
         return { 

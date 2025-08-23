@@ -6,14 +6,25 @@ const call = (name, data = {}) => new Promise((resolve, reject) => {
     success: res => {
       // 云函数返回格式约定：{ code: 0, data: any } 或直接返回对象
       const payload = res?.result;
-      if (!payload) return resolve(null);
+      if (!payload) return reject(new Error('云函数返回空结果'));
+      
+      // 检查是否有错误码
       if (typeof payload === 'object' && payload !== null && 'code' in payload) {
         if (payload.code === 0) return resolve(payload.data);
         return reject(payload);
       }
+      
+      // 检查是否有error字段
+      if (typeof payload === 'object' && payload !== null && 'error' in payload) {
+        return reject(payload);
+      }
+      
       resolve(payload);
     },
-    fail: err => reject(err)
+    fail: err => {
+      console.error('云函数调用失败:', err);
+      reject(err);
+    }
   });
 });
 
