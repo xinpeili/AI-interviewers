@@ -147,11 +147,16 @@ Page({
   onLoad(options) {
     // 从 URL 参数中解析出面试ID和第一个问题
     if (options.interviewId && options.question) {
-      const question = JSON.parse(decodeURIComponent(options.question));
-      this.setData({
-        interviewId: options.interviewId,
-        currentQuestion: question,
-      });
+      try {
+        const question = JSON.parse(decodeURIComponent(options.question));
+        this.setData({
+          interviewId: options.interviewId,
+          currentQuestion: question,
+        });
+      } catch (e) {
+        wx.showToast({ title: '问题加载失败', icon: 'error' });
+        wx.navigateBack();
+      }
     } else {
       // 异常处理
       wx.showToast({ title: '页面加载错误', icon: 'error' });
