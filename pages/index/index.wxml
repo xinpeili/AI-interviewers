@@ -1,6 +1,6 @@
 <view class="container">
   <view class="title-container">
-    <text class="title">AI 面试官</text>
+    <text class="title">小白面试通</text>
   </view>
 
   <view class="upload-container">
@@ -9,8 +9,10 @@
       <text class="upload-text">{{resumeName ? resumeName : '点击上传简历（可选）'}}</text>
     </view>
     <view class="tip-container">
-      <view class="tip-icon">💡</view>
-      <text class="upload-tip">上传简历可以让AI生成更准确的面试问题</text>
+      <view class="tip-icon">
+        <view class="bulb-icon"></view>
+      </view>
+      <text class="upload-tip">上传简历可以更真实的模拟面试</text>
     </view>
   </view>
 

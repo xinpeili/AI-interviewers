@@ -68,9 +68,46 @@
 }
 
 .tip-icon {
-  font-size: 18px;
   margin-right: 8px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulb-icon {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
   animation: pulse 2s infinite;
+}
+
+.bulb-icon::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 8px;
+  background: #ffd700;
+  border-radius: 0 0 3px 3px;
+}
+
+.bulb-icon::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
 }
 
 .upload-tip {
@@ -84,12 +121,15 @@
 @keyframes pulse {
   0% {
     transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
   }
   100% {
     transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
   }
 }
 
