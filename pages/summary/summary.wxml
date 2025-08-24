@@ -90,6 +90,6 @@
   <view class="loading-content">
     <view class="loading-spinner main-loading"></view>
     <text class="loading-title">生成总结报告中...</text>
-    <text class="loading-subtitle">AI正在分析您的面试表现</text>
+    <text class="loading-subtitle">正在分析您的面试表现</text>
   </view>
 </view>

@@ -96,7 +96,7 @@ Page({
         } else if (e.message.includes('API') || e.message.includes('网络')) {
           errorMessage = '网络错误，请检查网络后重试';
         } else if (e.message.includes('AI') || e.message.includes('模型')) {
-          errorMessage = 'AI服务异常，请稍后重试';
+          errorMessage = '服务异常，请稍后重试';
         } else {
           errorDetail = e.message;
         }

@@ -172,7 +172,7 @@ Page({
         return;
       }
       // 将失败提示清空，保留为空以便前端显示“点击获取参考思路”
-      if (typeof raw === 'string' && (raw.includes('失败') || raw.includes('AI 生成参考思路失败'))) {
+      if (typeof raw === 'string' && (raw.includes('失败') || raw.includes('生成参考思路失败'))) {
         item.reference = '';
         return;
       }

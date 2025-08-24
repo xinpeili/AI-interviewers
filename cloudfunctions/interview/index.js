@@ -942,7 +942,7 @@ exports.main = async (event, context) => {
     }
 
     if (action === 'status') {
-      // 兼容保留：返回 AI SDK 初始化与最近错误概况
+      // 兼容保留：返回 SDK 初始化与最近错误概况
       const apiKeyPresent = Boolean(process.env.ZHIPUAI_API_KEY || process.env.ZHIPU_API_KEY || process.env.ZHIPU_KEY);
       const sdkReady = await ensureZhipu();
       return { ok: true, hasZhipuSDK: Boolean(sdkReady), apiKeyConfigured: apiKeyPresent, lastAIError: lastAIError || null };

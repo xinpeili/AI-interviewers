@@ -189,10 +189,10 @@ Page({
         answer: userAnswer,
       });
 
-      // 检查是否有AI生成失败的错误
+      // 检查是否有生成失败的错误
       if (res.error) {
         wx.showToast({ 
-          title: res.message || 'AI生成问题失败，请重新点击获取问题', 
+          title: res.message || '生成问题失败，请重新点击获取问题', 
           icon: 'none',
           duration: 3000
         });
@@ -201,7 +201,7 @@ Page({
       }
 
       if (res.nextQuestion) {
-        // 如果 AI 返回了下一题
+        // 如果 返回了下一题
         this.setData({
           currentQuestion: res.nextQuestion,
           userAnswer: '', // 清空回答框

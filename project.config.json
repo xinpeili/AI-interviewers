@@ -48,7 +48,7 @@
     "tabSize": 2
   },
   "appid": "wx69cf2e9e4d4ea02e",
-  "projectname": "AI%E9%9D%A2%E8%AF%95",
+  "projectname": "%E9%9D%A2%E8%AF%95",
   "condition": {},
   "cloudfunctionRoot": "cloudfunctions/",
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/"
