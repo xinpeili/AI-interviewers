@@ -12,15 +12,38 @@ Page({
     refInProgress: false,
     // 是否已提示过参考思路补充完成
     _refCompletedNotified: false,
+    // 是否已分享，用于控制详情展示
+    hasShared: false,
   },
 
   onLoad(options) {
     if (options.interviewId) {
-      this.getSummary(options.interviewId);
       this._interviewId = options.interviewId; // 存储用于按需请求
+      
+      // 检查是否已经分享过（从本地存储获取）
+      const storageKey = `interview_shared_${options.interviewId}`;
+      const hasShared = wx.getStorageSync(storageKey);
+      
+      if (hasShared) {
+        this.setData({ hasShared: true });
+      }
+      
+      this.getSummary(options.interviewId);
     } else {
       wx.showToast({ title: '参数错误', icon: 'error' });
       this.setData({ isLoading: false });
+    }
+  },
+  
+  onShow() {
+    // 页面显示时，再次检查分享状态，确保从分享页面返回后能正确显示详情
+    if (this._interviewId) {
+      const storageKey = `interview_shared_${this._interviewId}`;
+      const hasShared = wx.getStorageSync(storageKey);
+      
+      if (hasShared && !this.data.hasShared) {
+        this.setData({ hasShared: true });
+      }
     }
   },
 
@@ -40,6 +63,53 @@ Page({
       }
       this._refPollData = null;
     }
+  },
+  
+  // 分享给好友
+  onShareAppMessage() {
+    const title = '小白面试通 - 好用的面试助手';
+    // 分享链接指向首页
+    const path = '/pages/index/index';
+    
+    // 立即设置分享状态，因为微信小程序分享成功回调不可靠
+    this.setData({ hasShared: true });
+    // 保存到本地存储，确保返回页面后状态不丢失
+    const storageKey = `interview_shared_${this._interviewId}`;
+    wx.setStorageSync(storageKey, true);
+    
+    wx.showToast({
+      title: '分享成功，已解锁详情',
+      icon: 'success',
+      duration: 2000
+    });
+    
+    return {
+      title,
+      path,
+      imageUrl: '/images/share-image.png' // 如果有分享图片可以设置
+    };
+  },
+  
+  // 分享到朋友圈
+  onShareTimeline() {
+    const title = '小白面试通 - 好用的面试助手';
+    
+    // 立即设置分享状态，因为微信小程序分享成功回调不可靠
+    this.setData({ hasShared: true });
+    // 保存到本地存储，确保返回页面后状态不丢失
+    const storageKey = `interview_shared_${this._interviewId}`;
+    wx.setStorageSync(storageKey, true);
+    
+    wx.showToast({
+      title: '分享成功，已解锁详情',
+      icon: 'success',
+      duration: 2000
+    });
+    
+    return {
+      title,
+      imageUrl: '/images/share-image.png' // 如果有分享图片可以设置
+    };
   },
 
   async getSummary(interviewId) {

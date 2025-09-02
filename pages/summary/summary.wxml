@@ -40,9 +40,18 @@
 
   <view class="section-container">
     <view class="section-title-box">
-      <text class="section-title">问答详情</text>
+      <text class="section-title">问答详情及答题思路</text>
     </view>
-    <view class="answers-details-list">
+    
+    <!-- 未分享时显示分享提示 -->
+    <view class="share-lock-container" wx:if="{{!hasShared}}">
+      <view class="lock-icon">🔒</view>
+      <view class="lock-text">分享给好友后查看详情及答题思路</view>
+      <button class="share-button" open-type="share">立即分享</button>
+    </view>
+    
+    <!-- 已分享后显示问答详情 -->
+    <view class="answers-details-list" wx:if="{{hasShared}}">
       <view class="answer-detail-item" wx:for="{{summaryData.answers}}" wx:for-item="item" wx:key="index">
         <view class="q-title-box">
           <text class="q-index">Q{{index + 1}}:</text>

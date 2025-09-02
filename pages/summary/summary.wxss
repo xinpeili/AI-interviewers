@@ -45,7 +45,7 @@
   font-size: 12px;
 }
 
-/* 参考思路“生成中...”的点点动画 */
+/* 参考思路"生成中..."的点点动画 */
 .reference-loading {
   display: flex;
   align-items: center;
@@ -281,4 +281,37 @@
 /* 移除小程序 button 默认边框 */
 .home-button::after {
   border: none;
+}
+
+/* 分享锁定样式 */
+.share-lock-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0;
+  background-color: #f8f8f8;
+  border-radius: 12rpx;
+  margin: 20rpx 0;
+}
+
+.lock-icon {
+  font-size: 60rpx;
+  margin-bottom: 20rpx;
+}
+
+.lock-text {
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 30rpx;
+}
+
+.share-button {
+  background-color: #4285f4;
+  color: white;
+  font-size: 30rpx;
+  padding: 16rpx 40rpx;
+  border-radius: 40rpx;
+  border: none;
+  margin-top: 10rpx;
 }
