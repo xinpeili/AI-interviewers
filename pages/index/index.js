@@ -6,6 +6,24 @@ Page({
     position: '',
     isPositionValid: false
   },
+  
+  // 分享给好友
+  onShareAppMessage() {
+    return {
+      title: '小白面试通 - 好用的面试助手',
+      path: '/pages/index/index',
+      imageUrl: '/images/share-image.png' // 如果有分享图片可以设置
+    };
+  },
+  
+  // 分享到朋友圈
+  onShareTimeline() {
+    return {
+      title: '小白面试通 - 好用的面试助手',
+      query: '',
+      imageUrl: '/images/share-image.png' // 如果有分享图片可以设置
+    };
+  },
 
   // 检查岗位是否有效
   checkPositionValid() {
